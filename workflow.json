@@ -1,0 +1,533 @@
+{
+  "name": "B2B Weekly Management Reporting",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 13,
+              "triggerAtMinute": 41
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d326449d-65ab-426d-a8e8-2462677395ca",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "getAll",
+        "returnAll": true,
+        "additionalFields": {
+          "propertiesCollection": {
+            "propertiesValues": {
+              "properties": [
+                "company",
+                "hubspot_owner_id",
+                "createdate",
+                "email",
+                "firstname",
+                "lastname",
+                "hs_lead_status",
+                "hs_object_id",
+                "lifecyclestage",
+                "notes_last_updated"
+              ],
+              "propertyMode": "valueOnly"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        -160
+      ],
+      "id": "d7501241-c1c7-4fe9-8b25-0b854e28c096",
+      "name": "Get many contacts",
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "LpPZhvG8jfIahXlh",
+          "name": "HubSpot account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "deal",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "includeAssociations": true,
+          "properties": [
+            "closedate",
+            "createdate",
+            "dealname",
+            "dealstage",
+            "amount",
+            "hs_object_id",
+            "pipeline"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        0
+      ],
+      "id": "46160cbc-8bf6-4c7f-bb22-f269282a53e9",
+      "name": "Get many deals",
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "LpPZhvG8jfIahXlh",
+          "name": "HubSpot account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "opt_fields": [
+            "gid",
+            "name",
+            "completed",
+            "due_on",
+            "assignee",
+            "completed_at",
+            "created_at"
+          ],
+          "project": "1217666771153490"
+        }
+      },
+      "type": "n8n-nodes-base.asana",
+      "typeVersion": 1,
+      "position": [
+        256,
+        176
+      ],
+      "id": "9278d47e-c100-4ad9-a2f7-8a3ec167873a",
+      "name": "Get many tasks",
+      "credentials": {
+        "asanaOAuth2Api": {
+          "id": "oVinvx1anjMyD5Yh",
+          "name": "Asana account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst now = new Date();\n\n// Current week: Monday through Sunday\nconst day = now.getDay();\nconst daysFromMonday = day === 0 ? 6 : day - 1;\n\nconst weekStart = new Date(now);\nweekStart.setDate(now.getDate() - daysFromMonday);\nweekStart.setHours(0, 0, 0, 0);\n\nconst weekEnd = new Date(weekStart);\nweekEnd.setDate(weekStart.getDate() + 6);\nweekEnd.setHours(23, 59, 59, 999);\n\nlet totalLeads = 0;\nlet qualifiedLeads = 0;\nlet newLeads = 0;\n\nfor (const item of items) {\n  const properties = item.json.properties || {};\n\n  const createDate =\n    properties.createdate?.value ||\n    properties.createdate ||\n    null;\n\n  const leadStatus = String(\n    properties.hs_lead_status?.value ||\n    properties.hs_lead_status ||\n    ''\n  ).toLowerCase();\n\n  const lifecycleStage = String(\n    properties.lifecyclestage?.value ||\n    properties.lifecyclestage ||\n    ''\n  ).toLowerCase();\n\n  // Count new leads created during the current week\n  if (createDate) {\n    const created = new Date(createDate);\n\n    if (created >= weekStart && created <= weekEnd) {\n      newLeads++;\n    }\n  }\n\n  // Count contacts that are considered leads\n  if (\n    lifecycleStage === 'lead' ||\n    lifecycleStage === 'marketingqualifiedlead' ||\n    lifecycleStage === 'salesqualifiedlead' ||\n    lifecycleStage === 'opportunity'\n  ) {\n    totalLeads++;\n  }\n\n  // Count qualified leads\n  if (\n    leadStatus.includes('qualified') ||\n    lifecycleStage === 'salesqualifiedlead'\n  ) {\n    qualifiedLeads++;\n  }\n}\n\nconst qualificationRate =\n  totalLeads > 0\n    ? Number(((qualifiedLeads / totalLeads) * 100).toFixed(2))\n    : 0;\n\nreturn [\n  {\n    json: {\n      reportWeekStart: weekStart.toISOString().split('T')[0],\n      reportWeekEnd: weekEnd.toISOString().split('T')[0],\n      totalLeads,\n      newLeads,\n      qualifiedLeads,\n      qualificationRate\n    }\n  }\n];// Loop over input items and add a new field called 'myNewField' to const contacts = $input.all();\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        -160
+      ],
+      "id": "fd68b7e9-d9be-4b90-8643-c73bd27b8eb0",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst now = new Date();\n\n// Current reporting week: Monday to Sunday\nconst day = now.getDay();\nconst daysFromMonday = day === 0 ? 6 : day - 1;\n\nconst weekStart = new Date(now);\nweekStart.setDate(now.getDate() - daysFromMonday);\nweekStart.setHours(0, 0, 0, 0);\n\nconst weekEnd = new Date(weekStart);\nweekEnd.setDate(weekStart.getDate() + 6);\nweekEnd.setHours(23, 59, 59, 999);\n\nlet wonDeals = 0;\nlet lostDeals = 0;\nlet openDeals = 0;\nlet revenue = 0;\n\nconst wonDealValues = [];\n\nfor (const item of items) {\n\n  const properties = item.json.properties || {};\n\n  // Amount\n  const amount = Number(\n    properties.amount?.value ||\n    properties.amount ||\n    0\n  );\n\n  // Deal stage\n  const dealStage = String(\n    properties.dealstage?.value ||\n    properties.dealstage ||\n    ''\n  ).toLowerCase().trim();\n\n  // Close date\n  const rawCloseDate =\n    properties.closedate?.value ||\n    properties.closedate ||\n    null;\n\n  let closeDate = null;\n\n  if (rawCloseDate) {\n    const numericDate = Number(rawCloseDate);\n\n    // HubSpot returns Unix timestamp in milliseconds\n    if (!isNaN(numericDate)) {\n      closeDate = new Date(numericDate);\n    } else {\n      closeDate = new Date(rawCloseDate);\n    }\n  }\n\n  // Check whether the deal closed during this reporting week\n  const closedThisWeek =\n    closeDate &&\n    closeDate >= weekStart &&\n    closeDate <= weekEnd;\n\n  // WON\n  if (dealStage === 'closedwon' && closedThisWeek) {\n    wonDeals++;\n    revenue += amount;\n    wonDealValues.push(amount);\n  }\n\n  // LOST\n  else if (dealStage === 'closedlost' && closedThisWeek) {\n    lostDeals++;\n  }\n\n  // OPEN\n  else if (\n    dealStage !== 'closedwon' &&\n    dealStage !== 'closedlost'\n  ) {\n    openDeals++;\n  }\n}\n\nconst averageDealValue =\n  wonDealValues.length > 0\n    ? Number(\n        (\n          wonDealValues.reduce((sum, value) => sum + value, 0) /\n          wonDealValues.length\n        ).toFixed(2)\n      )\n    : 0;\n\nconst totalClosedDeals = wonDeals + lostDeals;\n\nconst winRate =\n  totalClosedDeals > 0\n    ? Number(\n        ((wonDeals / totalClosedDeals) * 100).toFixed(2)\n      )\n    : 0;\n\nreturn [\n  {\n    json: {\n      reportWeekStart: weekStart.toISOString().split('T')[0],\n      reportWeekEnd: weekEnd.toISOString().split('T')[0],\n      wonDeals,\n      lostDeals,\n      openDeals,\n      revenue,\n      averageDealValue,\n      winRate\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "81897c75-ef78-4eb4-a4b3-4acf75fd48cc",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const tasks = $input.all();\n\nconst now = new Date();\n\n// Start of current reporting week (Monday)\nconst weekStart = new Date(now);\nconst day = weekStart.getDay();\nconst diff = day === 0 ? -6 : 1 - day;\nweekStart.setDate(weekStart.getDate() + diff);\nweekStart.setHours(0, 0, 0, 0);\n\n// End of current reporting week (Sunday)\nconst weekEnd = new Date(weekStart);\nweekEnd.setDate(weekStart.getDate() + 6);\nweekEnd.setHours(23, 59, 59, 999);\n\nlet totalTasks = 0;\nlet completedTasks = 0;\nlet pendingTasks = 0;\nlet overdueTasks = 0;\n\nfor (const item of tasks) {\n  const data = item.json;\n\n  // Only count actual tasks\n  if (data.resource_type && data.resource_type !== 'task') {\n    continue;\n  }\n\n  totalTasks++;\n\n  const completed = data.completed === true;\n\n  if (completed) {\n    completedTasks++;\n  } else {\n    pendingTasks++;\n\n    // Check whether the task is overdue\n    const dueDate = data.due_on || data.due_at;\n\n    if (dueDate) {\n      const due = new Date(dueDate);\n\n      if (due < now) {\n        overdueTasks++;\n      }\n    }\n  }\n}\n\nconst completionRate = totalTasks > 0\n  ? Number(((completedTasks / totalTasks) * 100).toFixed(2))\n  : 0;\n\nreturn [\n  {\n    json: {\n      reportWeekStart: weekStart.toISOString().split('T')[0],\n      reportWeekEnd: weekEnd.toISOString().split('T')[0],\n      totalTasks,\n      completedTasks,\n      pendingTasks,\n      overdueTasks,\n      completionRate\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        176
+      ],
+      "id": "fd1a2e87-8658-400f-89bf-1cf20f50b4bf",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        640,
+        -80
+      ],
+      "id": "c4cb176e-6a4b-4be3-b046-e5722e941863",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        848,
+        16
+      ],
+      "id": "d7efa64e-b066-4696-a20c-66cc00a0b2c7",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nreturn [\n  {\n    json: {\n      reportWeekStart: data.reportWeekStart,\n      reportWeekEnd: data.reportWeekEnd,\n\n      // Lead Performance\n      totalLeads: data.totalLeads,\n      newLeads: data.newLeads,\n      qualifiedLeads: data.qualifiedLeads,\n      qualificationRate: data.qualificationRate,\n\n      // Deal Performance\n      wonDeals: data.wonDeals,\n      lostDeals: data.lostDeals,\n      openDeals: data.openDeals,\n      revenue: data.revenue,\n      averageDealValue: data.averageDealValue,\n      winRate: data.winRate,\n\n      // Task Performance\n      totalTasks: data.totalTasks,\n      completedTasks: data.completedTasks,\n      pendingTasks: data.pendingTasks,\n      overdueTasks: data.overdueTasks,\n      completionRate: data.completionRate\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        16
+      ],
+      "id": "64ae8ea2-c094-4680-b94b-6dd3c9667f1e",
+      "name": "Build Weekly Report"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nconst html = `\n<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<style>\n    body {\n        font-family: Arial, sans-serif;\n        margin: 40px;\n        color: #222;\n    }\n\n    h1 {\n        text-align: center;\n        margin-bottom: 5px;\n    }\n\n    .period {\n        text-align: center;\n        color: #666;\n        margin-bottom: 30px;\n    }\n\n    h2 {\n        border-bottom: 2px solid #333;\n        padding-bottom: 5px;\n    }\n\n    table {\n        width: 100%;\n        border-collapse: collapse;\n        margin-bottom: 25px;\n    }\n\n    th, td {\n        border: 1px solid #ccc;\n        padding: 10px;\n        text-align: left;\n    }\n\n    th {\n        background: #f2f2f2;\n    }\n\n    .summary {\n        font-size: 18px;\n        font-weight: bold;\n        margin: 15px 0;\n    }\n</style>\n</head>\n\n<body>\n\n<h1>B2B Weekly Management Report</h1>\n\n<div class=\"period\">\n    ${data.reportWeekStart} to ${data.reportWeekEnd}\n</div>\n\n<h2>Lead Performance</h2>\n\n<table>\n<tr>\n    <th>Metric</th>\n    <th>Value</th>\n</tr>\n<tr>\n    <td>Total Leads</td>\n    <td>${data.totalLeads}</td>\n</tr>\n<tr>\n    <td>New Leads</td>\n    <td>${data.newLeads}</td>\n</tr>\n<tr>\n    <td>Qualified Leads</td>\n    <td>${data.qualifiedLeads}</td>\n</tr>\n<tr>\n    <td>Qualification Rate</td>\n    <td>${data.qualificationRate}%</td>\n</tr>\n</table>\n\n<h2>Deal Performance</h2>\n\n<table>\n<tr>\n    <th>Metric</th>\n    <th>Value</th>\n</tr>\n<tr>\n    <td>Won Deals</td>\n    <td>${data.wonDeals}</td>\n</tr>\n<tr>\n    <td>Lost Deals</td>\n    <td>${data.lostDeals}</td>\n</tr>\n<tr>\n    <td>Open Deals</td>\n    <td>${data.openDeals}</td>\n</tr>\n<tr>\n    <td>Revenue</td>\n    <td>$${data.revenue}</td>\n</tr>\n<tr>\n    <td>Average Deal Value</td>\n    <td>$${data.averageDealValue}</td>\n</tr>\n<tr>\n    <td>Win Rate</td>\n    <td>${data.winRate}%</td>\n</tr>\n</table>\n\n<h2>Task Performance</h2>\n\n<table>\n<tr>\n    <th>Metric</th>\n    <th>Value</th>\n</tr>\n<tr>\n    <td>Total Tasks</td>\n    <td>${data.totalTasks}</td>\n</tr>\n<tr>\n    <td>Completed Tasks</td>\n    <td>${data.completedTasks}</td>\n</tr>\n<tr>\n    <td>Pending Tasks</td>\n    <td>${data.pendingTasks}</td>\n</tr>\n<tr>\n    <td>Overdue Tasks</td>\n    <td>${data.overdueTasks}</td>\n</tr>\n<tr>\n    <td>Completion Rate</td>\n    <td>${data.completionRate}%</td>\n</tr>\n</table>\n\n</body>\n</html>\n`;\n\nreturn [\n    {\n        json: {\n            ...data,\n            html\n        }\n    }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1216,
+        16
+      ],
+      "id": "1ba94b33-d613-4261-afc2-89f307f38cae",
+      "name": "Create Report HTML"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdfshift.io/v3/convert/pdf",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "sk_2b365616c4307fcff82ef0f57c8ff53535febab8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ source: $json.html }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1392,
+        16
+      ],
+      "id": "dac4611a-3033-4d93-9b8f-f36ecab57672",
+      "name": "Generate PDF"
+    },
+    {
+      "parameters": {
+        "sendTo": "purposework686@gmail.com",
+        "subject": "=B2B Weekly Management Report - {{ $('Build Weekly Report').item.json.reportWeekStart }} to {{ $('Build Weekly Report').item.json.reportWeekEnd }}",
+        "emailType": "text",
+        "message": "=Hello,  Please find attached the B2B Weekly Management Report for the period {{ $('Build Weekly Report').item.json.reportWeekStart }} to {{ $('Build Weekly Report').item.json.reportWeekEnd }}.  The report contains the latest B2B performance metrics, including:  - Lead performance - Deal performance - Revenue - Win rate - Task completion - Pending tasks - Overdue tasks  Regards, B2B Operations Automation",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        16
+      ],
+      "id": "d5c24203-3be9-4662-95a7-1d0371725453",
+      "name": "Send a message",
+      "webhookId": "470ecce3-0414-4c2b-aebd-18f02167cd64",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "meZd5qj9XNc1XpLh",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "workspace": "1217179342419980",
+        "name": "=B2B Weekly Management Report - {{ $('Build Weekly Report').item.json.reportWeekStart }} to {{ $('Build Weekly Report').item.json.reportWeekEnd }}",
+        "otherProperties": {
+          "notes": "=B2B Weekly Management Report\n\nReporting Period:\n{{ $('Create Report HTML').item.json.reportWeekStart }} to {{ $('Create Report HTML').item.json.reportWeekEnd }}\n\nLEAD PERFORMANCE\nTotal Leads: {{ $('Create Report HTML').item.json.totalLeads }}\nNew Leads: {{ $('Create Report HTML').item.json.newLeads }}\nQualified Leads: {{ $('Create Report HTML').item.json.qualifiedLeads }}\nQualification Rate: {{ $('Create Report HTML').item.json.qualificationRate }}%\n\nDEAL PERFORMANCE\nWon Deals: {{ $('Build Weekly Report').item.json.wonDeals }}\nLost Deals: {{ $('Create Report HTML').item.json.lostDeals }}\nRevenue:{{ $('Create Report HTML').item.json.revenue }}\nAverage Deal Value: {{ $('Create Report HTML').item.json.averageDealValue }}\nWin Rate: {{ $('Create Report HTML').item.json.winRate }}%\n\nTASK PERFORMANCE\nTotal Tasks: {{ $('Create Report HTML').item.json.totalTasks }}\nCompleted Tasks: {{ $('Create Report HTML').item.json.completedTasks }}\nPending Tasks: {{ $('Create Report HTML').item.json.pendingTasks }}\nOverdue Tasks: {{ $('Create Report HTML').item.json.overdueTasks }}\nCompletion Rate: {{ $('Create Report HTML').item.json.completionRate }}%\n\nReport generated and emailed automatically.",
+          "projects": [
+            "1217666771153490"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.asana",
+      "typeVersion": 1,
+      "position": [
+        1776,
+        16
+      ],
+      "id": "5bd71d4c-1c88-4c47-bde4-91ead7ed7bf6",
+      "name": "Create a task",
+      "credentials": {
+        "asanaOAuth2Api": {
+          "id": "oVinvx1anjMyD5Yh",
+          "name": "Asana account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "move",
+        "id": "={{ $json.gid }}",
+        "projectId": "1217666771153490",
+        "section": "1217666771153499"
+      },
+      "type": "n8n-nodes-base.asana",
+      "typeVersion": 1,
+      "position": [
+        1952,
+        16
+      ],
+      "id": "76384106-acf8-4a18-a90b-18c4f4627070",
+      "name": "Move a task",
+      "credentials": {
+        "asanaOAuth2Api": {
+          "id": "oVinvx1anjMyD5Yh",
+          "name": "Asana account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many contacts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get many deals",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get many tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many contacts": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many deals": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many tasks": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Build Weekly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Weekly Report": {
+      "main": [
+        [
+          {
+            "node": "Create Report HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Report HTML": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Create a task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a task": {
+      "main": [
+        [
+          {
+            "node": "Move a task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "4RGMFDlqsIhqm1Lk",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "1c8ad4b2-a959-427f-9028-ebf60b30d83f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a94d7a07e36e17bae9537595345e7dbbe1de508c361591f62ad0548bb3a8c675"
+  },
+  "nodeGroups": [],
+  "id": "mINsPU7DbaCnw3kD",
+  "tags": []
+}
