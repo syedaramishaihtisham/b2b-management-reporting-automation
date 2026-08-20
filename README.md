@@ -312,57 +312,38 @@ The HTML report is converted into a PDF through an API integration, making the r
 
 ## 📸 Screenshots
 
-### 1. Complete Workflow
 
-![Complete Workflow](screenshots/workflow.png)
+### 1. Complete Automation Workflow
 
-### 2. HubSpot Contacts
+![Complete Automation Workflow](screenshots/workflow.png)
+
+### 2. HubSpot Companies
+
+![HubSpot Companies](screenshots/hubspot-companies.png)
+
+### 3. HubSpot Contacts
 
 ![HubSpot Contacts](screenshots/hubspot-contacts.png)
 
-### 3. HubSpot Deals
+### 4. HubSpot Deals
 
 ![HubSpot Deals](screenshots/hubspot-deals.png)
 
-### 4. Asana Tasks
+### 5. Asana Operations Tasks
 
-![Asana Tasks](screenshots/asana-tasks.png)
+![Asana Operations Tasks](screenshots/asana-tasks.png)
 
-### 5. Lead Metrics
+### 6. Weekly Management Report Email
 
-![Lead Metrics](screenshots/lead-metrics.png)
+![Weekly Management Report Email](screenshots/weekly-report-email.png)
 
-### 6. Deal Metrics
+### 7. Generated Weekly Report PDF
 
-![Deal Metrics](screenshots/deal-metrics.png)
+![Generated Weekly Report PDF](screenshots/weekly-report-pdf.png)
 
-### 7. Task Metrics
+### 8. HTML Report Generation
 
-![Task Metrics](screenshots/task-metrics.png)
-
-### 8. Merged Metrics
-
-![Merged Metrics](screenshots/merged-metrics.png)
-
-### 9. Weekly Report Data
-
-![Weekly Report](screenshots/weekly-report.png)
-
-### 10. Generated Report HTML
-
-![Report HTML](screenshots/report-html.png)
-
-### 11. PDF Generation
-
-![PDF Generation](screenshots/pdf-generation.png)
-
-### 12. Weekly Report Email
-
-![Email Report](screenshots/email-report.png)
-
-### 13. Asana Weekly Report Task
-
-![Asana Report Task](screenshots/asana-report-task.png)
+![HTML Report Generation](screenshots/pdf-html-generation.png)
 
 ### 14. Error Handling Workflow
 
@@ -386,20 +367,13 @@ b2b-management-reporting-automation/
 │
 └── screenshots/
     ├── workflow.png
+    ├── hubspot-companies.png
     ├── hubspot-contacts.png
     ├── hubspot-deals.png
     ├── asana-tasks.png
-    ├── lead-metrics.png
-    ├── deal-metrics.png
-    ├── task-metrics.png
-    ├── merged-metrics.png
-    ├── weekly-report.png
-    ├── report-html.png
-    ├── pdf-generation.png
-    ├── email-report.png
-    ├── asana-report-task.png
-    ├── error-workflow.png
-    └── error-log.png
+    ├── weekly-report-email.png
+    ├── weekly-report-pdf.png
+    └── pdf-html-generation.png
 ```
 
 ---
